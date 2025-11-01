@@ -103,3 +103,6 @@ Expand-Archive -Path $destZip -DestinationPath $toolDir -Force
 —
 
 Main class: `me.sanepe.aerochat.PaperBasePlugin`
+
+## License
+MIT — see `LICENSE` for details.
