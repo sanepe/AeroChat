@@ -1,0 +1,55 @@
+# AeroChat configuration
+# Colors: use legacy '&' codes and HEX as '&#RRGGBB'.
+# Advanced: MiniMessage tags are supported in text parts, e.g. <#ff8800>Hi</#ff8800> or <gradient:#ff8800:#ffaa00>Hi</gradient>.
+# Shortcut: '<#AAAAAA>Your text</#BBBBBB>' is automatically converted into a gradient between AAAAAA and BBBBBB.
+#   Note: this shortcut is intended for simple open/close pairs over a single text segment; nested or overlapping
+#   uses aren't supported by the shortcut and will fall back to MiniMessage's normal parsing.
+# You can also use PlaceholderAPI in values (e.g., %luckperms_prefix%).
+
+# Default color for player name used in templates (e.g., {player})
+player_color: "&f"
+
+# Join messages (set enabled to false to disable)
+# Tokens: {player}; supports legacy '&', HEX '&#RRGGBB', and MiniMessage tags. PAPI is supported in plain text.
+join:
+  welcome:
+    enabled: true
+    message: "&aWelcome to the server, {player}&a!"
+  broadcast:
+    enabled: true
+    message: "{player} &ejoined the server"
+
+# Example groups list (LuckPerms primary group)
+groups:
+  - admin
+  - mod
+  - helper
+  - youtuber
+  - default
+
+# Per-group prefixes (you can use '&' colors, HEX '&#RRGGBB', or MiniMessage tags)
+prefix:
+  admin: "<b><gradient:#C3613A:#E28787>ADMIN</gradient></b>"
+  mod: "<b><gradient:#5732C4:#7779C4>MOD</gradient></b>"
+  helper: "<b><gradient:#32C465:#77C4BE>HELPER</gradient></b>"
+  youtuber: "<b><gradient:#C43232:#FCC5C5>YOUTUBER</gradient></b>"
+  default: "<b><gradient:#857D7D:#D6D6D6>PLAYER</gradient></b>"
+
+# Chat format template. Supported tokens:
+# {prefix}  -> resolved prefix based on group (or LP meta/default)
+# {player}  -> player's display name component
+# {message} -> the chat message component
+# You can use PlaceholderAPI placeholders inside the plain text parts if PAPI is installed.
+# MiniMessage tags work in the static parts around tokens. {message} remains the original chat component.
+chat-format: "{prefix} &7{player}&7: &f{message}"
+
+# ClearChat command configuration
+clearchat:
+  # Default amount of blank lines to push previous chat out of view
+  lines: 100
+  broadcast:
+    enabled: true
+    # Tokens: {sender}; supports legacy '&' and HEX '&#RRGGBB'
+    # Note: MiniMessage tags are NOT processed for ClearChat broadcast; use '&' or HEX here.
+    message: "&7Chat was cleared by &e{sender}"
+

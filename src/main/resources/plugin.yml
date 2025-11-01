@@ -1,0 +1,32 @@
+name: AeroChat
+main: me.sanepe.aerochat.PaperBasePlugin
+version: 1.0.0
+api-version: '1.21'
+authors:
+  - Sanepe
+description: AeroChat - Ultra-lightweight chat plugin for Paper 1.21.x
+website: https://example.com
+softdepend:
+  - PlaceholderAPI
+  - LuckPerms
+
+commands:
+  aerochat:
+    description: AeroChat admin commands
+    usage: /aerochat reload
+    permission: aerochat.reload
+    aliases: [aec]
+
+  clearchat:
+    description: Clear the public chat for all players
+    usage: /clearchat [lines]
+    permission: aerochat.clearchat
+    aliases: [cc]
+
+permissions:
+  aerochat.reload:
+    description: Allows reloading AeroChat configuration
+    default: op
+  aerochat.clearchat:
+    description: Allows clearing the chat
+    default: op
