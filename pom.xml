@@ -6,7 +6,7 @@
 
     <groupId>me.sanepe</groupId>
     <artifactId>aerochat</artifactId>
-    <version>1.1.1</version>
+    <version>1.2.0</version>
     <name>aerochat</name>
     <description>AeroChat - Ultra-lightweight chat plugin for Paper 1.21.x with PlaceholderAPI and LuckPerms support</description>
 

@@ -45,6 +45,8 @@ Supported style syntaxes in static parts:
 | `join.welcome` | Direct message to joining player (enable + text). |
 | `join.broadcast.message` | Server-wide join message text. |
 | `join.broadcast.show_player_their_broadcast` | If false, only other players see the normal join broadcast. |
+| `leave.broadcast.enabled` | Enable/disable leave broadcast. |
+| `leave.broadcast.message` | Leave message (broadcast to others only). |
 | `join.first_broadcast.show_player_their_broadcast` | Same behavior for first join broadcast. |
 | `clearchat.lines` | Default line count to push old chat off screen. |
 | `clearchat.broadcast.message` | Message shown after clearing chat. |
@@ -90,7 +92,7 @@ With Maven installed:
 cd C:\Users\USER\Desktop\Plugins\aerochat
 mvn -q -DskipTests package
 ```
-Output: `target\aerochat-1.1.0.jar`
+Output: `target\aerochat-1.2.0.jar`
 
 Portable Maven (if you lack a global install):
 ```powershell

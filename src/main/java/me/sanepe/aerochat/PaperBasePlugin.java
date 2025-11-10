@@ -3,6 +3,7 @@ package me.sanepe.aerochat;
 import me.sanepe.aerochat.commands.AeroChatCommand;
 import me.sanepe.aerochat.commands.ClearChatCommand;
 import me.sanepe.aerochat.listeners.JoinListener;
+import me.sanepe.aerochat.listeners.LeaveListener;
 import me.sanepe.aerochat.listeners.ChatListener;
 import org.bukkit.Bukkit;
 import org.bukkit.command.ConsoleCommandSender;
@@ -65,7 +66,8 @@ public final class PaperBasePlugin extends JavaPlugin {
         }
 
         // Register listeners
-        getServer().getPluginManager().registerEvents(new JoinListener(), this);
+    getServer().getPluginManager().registerEvents(new JoinListener(), this);
+    getServer().getPluginManager().registerEvents(new LeaveListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
     }
 

@@ -86,3 +86,10 @@ clearchat:
   # Tokens: {sender}; supports & codes and HEX. MiniMessage NOT processed here.
     message: "&7Chat was cleared by &e{sender}"
 
+# Leave/quit messages (broadcast only; leaver does not see it)
+leave:
+  broadcast:
+    enabled: true
+    # Token: {player}
+    message: "&c{player} left the server"
+
