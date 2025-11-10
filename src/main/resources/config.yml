@@ -23,8 +23,8 @@ join:
     enabled: true
     message: "{player} &ejoined the server"
     # If true, the joining player will also see the broadcast; if false, only others will.
-    show_player_their_broadcast: true
     show_player_their_broadcast: false
+    
   # First join messages (only sent the very first time a player ever joins)
   first_join:
     enabled: true
