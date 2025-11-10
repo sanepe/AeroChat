@@ -1,16 +1,20 @@
 # AeroChat configuration
-# Colors: use legacy '&' codes and HEX as '&#RRGGBB'.
-# Advanced: MiniMessage tags are supported in text parts, e.g. <#ff8800>Hi</#ff8800> or <gradient:#ff8800:#ffaa00>Hi</gradient>.
-# Shortcut: '<#AAAAAA>Your text</#BBBBBB>' is automatically converted into a gradient between AAAAAA and BBBBBB.
-#   Note: this shortcut is intended for simple open/close pairs over a single text segment; nested or overlapping
-#   uses aren't supported by the shortcut and will fall back to MiniMessage's normal parsing.
-# You can also use PlaceholderAPI in values (e.g., %luckperms_prefix%).
+#
+# Formatting supported in static text (outside of {tokens}):
+#   & codes          e.g. &a, &l
+#   HEX colors       '&#RRGGBB'
+#   MiniMessage tags e.g. <gradient:#ff8800:#ffaa00>Text</gradient>
+#   Gradient shortcut <#AAAAAA>Text</#BBBBBB> (auto-converted)
+#
+# PlaceholderAPI: you can use placeholders like %luckperms_prefix% in plain text values.
+# Tokens provided by AeroChat in templates: {prefix}, {player}, {message}
 
 # Default color for player name used in templates (e.g., {player})
 player_color: "&f"
 
-# Join messages (set enabled to false to disable)
-# Tokens: {player}; supports legacy '&', HEX '&#RRGGBB', and MiniMessage tags. PAPI is supported in plain text.
+# Join messages (set enabled=false to disable)
+# Token available here: {player}
+# Static parts: supports & codes, HEX, MiniMessage. PAPI works in plain text.
 join:
   welcome:
     enabled: true
@@ -18,6 +22,17 @@ join:
   broadcast:
     enabled: true
     message: "{player} &ejoined the server"
+    # If true, the joining player will also see the broadcast; if false, only others will.
+    show_player_their_broadcast: true
+    show_player_their_broadcast: false
+  # First join messages (only sent the very first time a player ever joins)
+  first_join:
+    enabled: true
+    message: "&b{player}&7 is player number &e{player_number}&7 to join the server"
+  first_broadcast:
+    enabled: true
+    message: "&e{player} &7is player number &b{player_number}&7 to join the server"
+    show_player_their_broadcast: false
 
 # Example groups list (LuckPerms primary group)
 groups:
@@ -27,7 +42,7 @@ groups:
   - youtuber
   - default
 
-# Per-group prefixes (you can use '&' colors, HEX '&#RRGGBB', or MiniMessage tags)
+# Per-group prefixes (supports & codes, HEX, MiniMessage)
 prefix:
   admin: "<b><gradient:#C3613A:#E28787>ADMIN</gradient></b>"
   mod: "<b><gradient:#5732C4:#7779C4>MOD</gradient></b>"
@@ -35,21 +50,39 @@ prefix:
   youtuber: "<b><gradient:#C43232:#FCC5C5>YOUTUBER</gradient></b>"
   default: "<b><gradient:#857D7D:#D6D6D6>PLAYER</gradient></b>"
 
-# Chat format template. Supported tokens:
-# {prefix}  -> resolved prefix based on group (or LP meta/default)
-# {player}  -> player's display name component
-# {message} -> the chat message component
-# You can use PlaceholderAPI placeholders inside the plain text parts if PAPI is installed.
-# MiniMessage tags work in the static parts around tokens. {message} remains the original chat component.
-chat-format: "{prefix} &7{player}&7: &f{message}"
+# Chat format template
+# Tokens:
+#   {prefix}  resolved prefix based on group (or LuckPerms meta/default)
+#   {player}  player's name colored with player_color
+#   {message} original chat component (not reparsed)
+# Static parts: & codes, HEX, MiniMessage. PAPI placeholders allowed.
+chat-format: "{prefix} {player}&7: "
 
-# ClearChat command configuration
+# Per-group message color/style
+# Used ONLY if chat-format does NOT contain {message}.
+# Token: {message} replaced with player's plain message text.
+# Static parts support & codes, HEX, MiniMessage.
+message-color:
+  group:
+    admin: "&f{message}"
+    mod: "&f{message}"
+    helper: "&f{message}"
+    youtuber: "&f{message}"
+    default: "&7{message}"
+
+# Per-group control: allow legacy & color codes in player messages.
+# Missing group key -> true (colors allowed). Set false to strip all color codes.
+# NOTE: Key kept as 'color-formating' for backward compatibility.
+# DEFAULT VALUE FOR NO ADDED GROUPS: true
+color-formating:
+  default: false
+
+# ClearChat command
 clearchat:
   # Default amount of blank lines to push previous chat out of view
   lines: 100
   broadcast:
     enabled: true
-    # Tokens: {sender}; supports legacy '&' and HEX '&#RRGGBB'
-    # Note: MiniMessage tags are NOT processed for ClearChat broadcast; use '&' or HEX here.
+  # Tokens: {sender}; supports & codes and HEX. MiniMessage NOT processed here.
     message: "&7Chat was cleared by &e{sender}"
 

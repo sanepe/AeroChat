@@ -1,12 +1,10 @@
 package me.sanepe.aerochat.listeners;
 
 import me.sanepe.aerochat.PaperBasePlugin;
+import me.sanepe.aerochat.TextUtil;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
@@ -15,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;
@@ -24,24 +23,21 @@ public class ChatListener implements Listener {
 
     private final PaperBasePlugin plugin;
     private final boolean papiEnabled;
-    private final LegacyComponentSerializer legacy;
-    private static final Pattern AMP_HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
     private LuckPerms luckPerms = null;
     private boolean lpEnabled = false;
-    private final MiniMessage mini = MiniMessage.miniMessage();
 
     public ChatListener(PaperBasePlugin plugin) {
         this.plugin = plugin;
         this.papiEnabled = Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
-        this.legacy = LegacyComponentSerializer.builder()
-                .character('&')
-                .hexColors()
-                .useUnusualXRepeatedCharacterHexFormat()
-                .build();
-        try {
-            this.luckPerms = LuckPermsProvider.get();
-            this.lpEnabled = (this.luckPerms != null);
-        } catch (Exception ignored) {
+        // Only touch LuckPerms classes if the plugin is actually present to avoid CNFE/NCDFE
+        if (Bukkit.getPluginManager().getPlugin("LuckPerms") != null) {
+            try {
+                this.luckPerms = LuckPermsProvider.get();
+                this.lpEnabled = (this.luckPerms != null);
+            } catch (Throwable ignored) {
+                this.lpEnabled = false;
+            }
+        } else {
             this.lpEnabled = false;
         }
     }
@@ -89,12 +85,24 @@ public class ChatListener implements Listener {
 
         Component prefix = Component.empty();
         if (prefixStr != null && !prefixStr.isBlank()) {
-            prefix = deserializeText(prefixStr, papiEnabled ? player : null);
+            prefix = TextUtil.deserializeWithMini(prefixStr, papiEnabled, papiEnabled ? player : null);
         }
 
         final Component finalPrefix = prefix;
-        final String templateRaw = cfg.getString("chat-format", "{prefix} &7{player}&7: &f{message}");
-        event.renderer((source, displayName, message, viewer) -> renderTemplate(templateRaw, finalPrefix, displayName, message, papiEnabled ? player : null, player, playerColor));
+        final String templateRaw = cfg.getString("chat-format", "{prefix} &7{player}&7: ");
+        final String msgColorTemplate = resolveMessageColorTemplate(cfg, group);
+        final Player papiPlayer = papiEnabled ? player : null;
+        final boolean allowLegacyColors = isColorFormattingAllowed(cfg, group);
+        event.renderer((source, displayName, message, viewer) -> {
+            if (templateRaw.contains("{message}")) {
+                Component processedMessage = processMessageComponent(message, allowLegacyColors);
+                return renderTemplate(templateRaw, finalPrefix, displayName, processedMessage, papiPlayer, player, playerColor);
+            }
+            Component head = renderTemplateNoMessage(templateRaw, finalPrefix, displayName, papiPlayer, player, playerColor);
+            Component processedMessage = processMessageComponent(message, allowLegacyColors);
+            Component coloredMsg = renderColoredMessage(msgColorTemplate, processedMessage, papiPlayer);
+            return head.append(coloredMsg);
+        });
     }
 
     private Component renderTemplate(String template, Component prefix, Component playerName, Component message, Player papiPlayer, Player rawPlayer, String playerColor) {
@@ -106,72 +114,93 @@ public class ChatListener implements Listener {
         while (m.find()) {
             String text = template.substring(last, m.start());
             if (!text.isEmpty()) {
-                result = result.append(deserializeText(text, papiPlayer));
+                result = result.append(TextUtil.deserializeWithMini(text, papiPlayer != null, papiPlayer));
             }
             String token = m.group();
             if ("{prefix}".equals(token)) result = result.append(prefix);
             else if ("{player}".equals(token)) {
-                String colored = translateAmpersandHex((playerColor == null ? "&f" : playerColor) + rawPlayer.getName());
-                result = result.append(legacy.deserialize(colored));
+                String base = (playerColor == null ? "&f" : playerColor) + rawPlayer.getName();
+                result = result.append(TextUtil.deserializeLegacy(base, false, null));
             } else if ("{message}".equals(token)) result = result.append(message);
             last = m.end();
         }
         if (last < template.length()) {
             String tail = template.substring(last);
-            result = result.append(deserializeText(tail, papiPlayer));
+            result = result.append(TextUtil.deserializeWithMini(tail, papiPlayer != null, papiPlayer));
         }
         return result;
     }
 
-    private Component deserializeText(String input, Player papiPlayer) {
-        if (input == null || input.isEmpty()) return Component.empty();
-        String s = input;
-        if (papiPlayer != null) {
-            try { s = PlaceholderAPI.setPlaceholders(papiPlayer, s); } catch (Throwable ignored) {}
-        }
-        if (looksLikeMiniMessage(s)) {
-            s = preprocessHexGradientTags(s);
-            try { return mini.deserialize(s); } catch (Throwable ignored) {}
-        }
-        return legacy.deserialize(translateAmpersandHex(s));
-    }
-
-    private boolean looksLikeMiniMessage(String s) {
-        return s.indexOf('<') >= 0 && s.indexOf('>') > s.indexOf('<');
-    }
-
-    private String preprocessHexGradientTags(String s) {
-        try {
-            Pattern pat = Pattern.compile("<#([A-Fa-f0-9]{6})>(.*?)</#([A-Fa-f0-9]{6})>", Pattern.DOTALL);
-            Matcher m = pat.matcher(s);
-            StringBuffer out = new StringBuffer();
-            while (m.find()) {
-                String rep = "<gradient:#" + m.group(1) + ":#" + m.group(3) + ">" + m.group(2) + "</gradient>";
-                m.appendReplacement(out, Matcher.quoteReplacement(rep));
-            }
-            m.appendTail(out);
-            return out.toString();
-        } catch (Throwable ignored) {
-            return s;
-        }
-    }
-
-    private static String translateAmpersandHex(String input) {
-        if (input == null || input.isEmpty()) return input;
-        Matcher m = AMP_HEX_PATTERN.matcher(input);
-        StringBuffer sb = new StringBuffer();
+    private Component renderTemplateNoMessage(String template, Component prefix, Component playerName, Player papiPlayer, Player rawPlayer, String playerColor) {
+        if (template == null) template = "{prefix} {player}: ";
+        Pattern p = Pattern.compile("(\\{prefix\\}|\\{player\\})");
+        Matcher m = p.matcher(template);
+        int last = 0;
+        Component result = Component.empty();
         while (m.find()) {
-            String hex = m.group(1);
-            StringBuilder rep = new StringBuilder("&x");
-            for (char c : hex.toCharArray()) {
-                rep.append('&').append(c);
+            String text = template.substring(last, m.start());
+            if (!text.isEmpty()) {
+                result = result.append(TextUtil.deserializeWithMini(text, papiPlayer != null, papiPlayer));
             }
-            m.appendReplacement(sb, Matcher.quoteReplacement(rep.toString()));
+            String token = m.group();
+            if ("{prefix}".equals(token)) result = result.append(prefix);
+            else if ("{player}".equals(token)) {
+                String base = (playerColor == null ? "&f" : playerColor) + rawPlayer.getName();
+                result = result.append(TextUtil.deserializeLegacy(base, false, null));
+            }
+            last = m.end();
         }
-        m.appendTail(sb);
-        return sb.toString();
+        if (last < template.length()) {
+            String tail = template.substring(last);
+            result = result.append(TextUtil.deserializeWithMini(tail, papiPlayer != null, papiPlayer));
+        }
+        return result;
     }
 
+    private String resolveMessageColorTemplate(FileConfiguration cfg, String group) {
+        String s = cfg.getString("message-color.group." + group, null);
+        if (s == null || s.isBlank()) s = cfg.getString("message-color.group.default", null);
+        if (s == null || s.isBlank()) s = "&f{message}";
+        return s;
+    }
+
+    private Component renderColoredMessage(String mapping, Component userMessageComp, Player papiPlayer) {
+        if (mapping == null) mapping = "{message}";
+        Pattern p = Pattern.compile("(\\{message\\})");
+        Matcher m = p.matcher(mapping);
+        int last = 0;
+        Component result = Component.empty();
+        while (m.find()) {
+            String text = mapping.substring(last, m.start());
+            if (!text.isEmpty()) {
+                result = result.append(TextUtil.deserializeWithMini(text, papiPlayer != null, papiPlayer));
+            }
+            result = result.append(userMessageComp);
+            last = m.end();
+        }
+        if (last < mapping.length()) {
+            String tail = mapping.substring(last);
+            result = result.append(TextUtil.deserializeWithMini(tail, papiPlayer != null, papiPlayer));
+        }
+        return result;
+    }
+
+    private boolean isColorFormattingAllowed(FileConfiguration cfg, String group) {
+        String path = "color-formating." + group;
+        if (cfg.isSet(path)) return cfg.getBoolean(path, true);
+        // Missing group -> default true
+        return true;
+    }
+
+    private Component processMessageComponent(Component original, boolean allowLegacyColors) {
+        String raw = PlainTextComponentSerializer.plainText().serialize(original);
+        if (allowLegacyColors) {
+            // Interpret legacy & codes and hex in user's message
+            return TextUtil.deserializeLegacy(raw, false, null);
+        }
+        // No color formatting allowed: return plain text as-is
+        return Component.text(raw);
+    }
     private static boolean isValid(String s) {
         return s != null && !s.isBlank() && !"null".equalsIgnoreCase(s);
     }

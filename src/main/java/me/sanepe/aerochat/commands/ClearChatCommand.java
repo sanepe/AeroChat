@@ -1,9 +1,8 @@
 package me.sanepe.aerochat.commands;
 
 import me.sanepe.aerochat.PaperBasePlugin;
-import me.clip.placeholderapi.PlaceholderAPI;
+import me.sanepe.aerochat.TextUtil;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -15,25 +14,15 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ClearChatCommand implements CommandExecutor, TabCompleter {
 
-    private static final Pattern AMP_HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
-
     private final PaperBasePlugin plugin;
     private final boolean papiEnabled;
-    private final LegacyComponentSerializer legacy;
 
     public ClearChatCommand(PaperBasePlugin plugin) {
         this.plugin = plugin;
         this.papiEnabled = Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
-        this.legacy = LegacyComponentSerializer.builder()
-                .character('&')
-                .hexColors()
-                .useUnusualXRepeatedCharacterHexFormat()
-                .build();
     }
 
     @Override
@@ -65,11 +54,7 @@ public class ClearChatCommand implements CommandExecutor, TabCompleter {
         if (cfg.getBoolean("clearchat.broadcast.enabled", true)) {
             String msg = cfg.getString("clearchat.broadcast.message", "&7Chat was cleared by &e{sender}");
             msg = msg.replace("{sender}", sender.getName());
-            if (papiEnabled && sender instanceof Player) {
-                try { msg = PlaceholderAPI.setPlaceholders((Player) sender, msg); } catch (Throwable ignored) {}
-            }
-            msg = translateAmpersandHex(msg);
-            Component comp = legacy.deserialize(msg);
+            Component comp = TextUtil.deserializeLegacy(msg, papiEnabled && sender instanceof Player, sender instanceof Player ? (Player) sender : null);
             Bukkit.getServer().broadcast(comp);
         }
 
@@ -86,19 +71,5 @@ public class ClearChatCommand implements CommandExecutor, TabCompleter {
         return Collections.emptyList();
     }
 
-    private static String translateAmpersandHex(String input) {
-        if (input == null || input.isEmpty()) return input;
-        Matcher m = AMP_HEX_PATTERN.matcher(input);
-        StringBuffer sb = new StringBuffer();
-        while (m.find()) {
-            String hex = m.group(1);
-            StringBuilder rep = new StringBuilder("&x");
-            for (char c : hex.toCharArray()) {
-                rep.append('&').append(c);
-            }
-            m.appendReplacement(sb, Matcher.quoteReplacement(rep.toString()));
-        }
-        m.appendTail(sb);
-        return sb.toString();
-    }
+    
 }
