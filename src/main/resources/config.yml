@@ -34,6 +34,13 @@ join:
     message: "&e{player} &7is player number &b{player_number}&7 to join the server"
     show_player_their_broadcast: false
 
+# Leave/quit messages (broadcast only; leaver does not see it)
+leave:
+  broadcast:
+    enabled: true
+    # Token: {player}
+    message: "&c{player} left the server"
+
 # Example groups list (LuckPerms primary group)
 groups:
   - admin
@@ -85,11 +92,4 @@ clearchat:
     enabled: true
   # Tokens: {sender}; supports & codes and HEX. MiniMessage NOT processed here.
     message: "&7Chat was cleared by &e{sender}"
-
-# Leave/quit messages (broadcast only; leaver does not see it)
-leave:
-  broadcast:
-    enabled: true
-    # Token: {player}
-    message: "&c{player} left the server"
 

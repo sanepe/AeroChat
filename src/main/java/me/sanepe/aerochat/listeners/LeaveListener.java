@@ -29,8 +29,7 @@ public class LeaveListener implements Listener {
         Player player = event.getPlayer();
         FileConfiguration cfg = plugin.getConfig();
         if (!cfg.getBoolean("leave.broadcast.enabled", true)) {
-            // Keep default leave message behavior if disabled? We'll suppress to remain consistent.
-            event.quitMessage(null);
+            // Respect server's default leave message when disabled
             return;
         }
         String template = cfg.getString("leave.broadcast.message", "&c{player} left the server");
